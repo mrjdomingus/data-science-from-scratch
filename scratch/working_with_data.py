@@ -25,28 +25,29 @@ def random_normal() -> float:
     """Returns a random draw from a standard normal distribution"""
     return inverse_normal_cdf(random.random())
 
-xs = [random_normal() for _ in range(1000)]
-ys1 = [ x + random_normal() / 2 for x in xs]
-ys2 = [-x + random_normal() / 2 for x in xs]
+def plot_working_scatter():
+    xs = [random_normal() for _ in range(1000)]
+    ys1 = [ x + random_normal() / 2 for x in xs]
+    ys2 = [-x + random_normal() / 2 for x in xs]
 
-plt.scatter(xs, ys1, marker='.', color='black', label='ys1')
-plt.scatter(xs, ys2, marker='.', color='gray',  label='ys2')
-plt.xlabel('xs')
-plt.ylabel('ys')
-plt.legend(loc=9)
-plt.title("Very Different Joint Distributions")
-# plt.show()
-
-
-plt.savefig('im/working_scatter.png')
-plt.gca().clear()
+    plt.scatter(xs, ys1, marker='.', color='black', label='ys1')
+    plt.scatter(xs, ys2, marker='.', color='gray',  label='ys2')
+    plt.xlabel('xs')
+    plt.ylabel('ys')
+    plt.legend(loc=9)
+    plt.title("Very Different Joint Distributions")
+    # plt.show()
 
 
-from scratch.statistics import correlation
+    plt.savefig('im/working_scatter.png')
+    plt.gca().clear()
 
 
-assert 0.89 < correlation(xs, ys1) < 0.91
-assert -0.91 < correlation(xs, ys2) < -0.89
+    from scratch.statistics import correlation
+
+
+    assert 0.89 < correlation(xs, ys1) < 0.91
+    assert -0.91 < correlation(xs, ys2) < -0.89
 
 from scratch.linear_algebra import Matrix, Vector, make_matrix
 
@@ -60,13 +61,13 @@ def correlation_matrix(data: List[Vector]) -> Matrix:
 
     return make_matrix(len(data), len(data), correlation_ij)
 
-
-vectors = [xs, ys1, ys2]
-assert correlation_matrix(vectors) == [
-    [correlation(xs,  xs), correlation(xs,  ys1), correlation(xs,  ys2)],
-    [correlation(ys1, xs), correlation(ys1, ys1), correlation(ys1, ys2)],
-    [correlation(ys2, xs), correlation(ys2, ys1), correlation(ys2, ys2)],
-]
+def test_correlation_matrix():
+    vectors = [xs, ys1, ys2]
+    assert correlation_matrix(vectors) == [
+        [correlation(xs,  xs), correlation(xs,  ys1), correlation(xs,  ys2)],
+        [correlation(ys1, xs), correlation(ys1, ys1), correlation(ys1, ys2)],
+        [correlation(ys2, xs), correlation(ys2, ys1), correlation(ys2, ys2)],
+    ]
 
 import datetime
 
@@ -90,11 +91,12 @@ class StockPrice(NamedTuple):
         """It's a class, so we can add methods too"""
         return self.symbol in ['MSFT', 'GOOG', 'FB', 'AMZN', 'AAPL']
 
-price = StockPrice('MSFT', datetime.date(2018, 12, 14), 106.03)
+def test_StockPrice():
+    price = StockPrice('MSFT', datetime.date(2018, 12, 14), 106.03)
 
-assert price.symbol == 'MSFT'
-assert price.closing_price == 106.03
-assert price.is_high_tech()
+    assert price.symbol == 'MSFT'
+    assert price.closing_price == 106.03
+    assert price.is_high_tech()
 
 from dateutil.parser import parse
 
@@ -104,12 +106,13 @@ def parse_row(row: List[str]) -> StockPrice:
                       date=parse(date).date(),
                       closing_price=float(closing_price))
 
-# Now test our function
-stock = parse_row(["MSFT", "2018-12-14", "106.03"])
+def test_parse_row():
+    # Now test our function
+    stock = parse_row(["MSFT", "2018-12-14", "106.03"])
 
-assert stock.symbol == "MSFT"
-assert stock.date == datetime.date(2018, 12, 14)
-assert stock.closing_price == 106.03
+    assert stock.symbol == "MSFT"
+    assert stock.date == datetime.date(2018, 12, 14)
+    assert stock.closing_price == 106.03
 
 from typing import Optional
 import re
@@ -133,58 +136,59 @@ def try_parse_row(row: List[str]) -> Optional[StockPrice]:
 
     return StockPrice(symbol, date, closing_price)
 
-# Should return None for errors
-assert try_parse_row(["MSFT0", "2018-12-14", "106.03"]) is None
-assert try_parse_row(["MSFT", "2018-12--14", "106.03"]) is None
-assert try_parse_row(["MSFT", "2018-12-14", "x"]) is None
+def test_try_parse_row():
+    # Should return None for errors
+    assert try_parse_row(["MSFT0", "2018-12-14", "106.03"]) is None
+    assert try_parse_row(["MSFT", "2018-12--14", "106.03"]) is None
+    assert try_parse_row(["MSFT", "2018-12-14", "x"]) is None
 
-# But should return same as before if data is good.
-assert try_parse_row(["MSFT", "2018-12-14", "106.03"]) == stock
+    # But should return same as before if data is good.
+    assert try_parse_row(["MSFT", "2018-12-14", "106.03"]) == stock
 
 
-from dateutil.parser import parse
-import csv
+    from dateutil.parser import parse
+    import csv
 
-with open("stocks.csv", "r") as f:
-    reader = csv.DictReader(f)
-    rows = [[row['Symbol'], row['Date'], row['Close']]
-            for row in reader]
+    with open("stocks.csv", "r") as f:
+        reader = csv.DictReader(f)
+        rows = [[row['Symbol'], row['Date'], row['Close']]
+                for row in reader]
 
-# skip header
-maybe_data = [try_parse_row(row) for row in rows]
+    # skip header
+    maybe_data = [try_parse_row(row) for row in rows]
 
-# Make sure they all loaded successfully:
-assert maybe_data
-assert all(sp is not None for sp in maybe_data)
+    # Make sure they all loaded successfully:
+    assert maybe_data
+    assert all(sp is not None for sp in maybe_data)
 
-# This is just to make mypy happy
-data = [sp for sp in maybe_data if sp is not None]
+    # This is just to make mypy happy
+    data = [sp for sp in maybe_data if sp is not None]
 
-max_aapl_price = max(stock_price.closing_price
-                     for stock_price in data
-                     if stock_price.symbol == "AAPL")
+    max_aapl_price = max(stock_price.closing_price
+                        for stock_price in data
+                        if stock_price.symbol == "AAPL")
 
-from collections import defaultdict
+    from collections import defaultdict
 
-max_prices: Dict[str, float] = defaultdict(lambda: float('-inf'))
+    max_prices: Dict[str, float] = defaultdict(lambda: float('-inf'))
 
-for sp in data:
-    symbol, closing_price = sp.symbol, sp.closing_price
-    if closing_price > max_prices[symbol]:
-        max_prices[symbol] = closing_price
+    for sp in data:
+        symbol, closing_price = sp.symbol, sp.closing_price
+        if closing_price > max_prices[symbol]:
+            max_prices[symbol] = closing_price
 
-from typing import List
-from collections import defaultdict
+    from typing import List
+    from collections import defaultdict
 
-# Collect the prices by symbol
-prices: Dict[str, List[StockPrice]] = defaultdict(list)
+    # Collect the prices by symbol
+    prices: Dict[str, List[StockPrice]] = defaultdict(list)
 
-for sp in data:
-    prices[sp.symbol].append(sp)
+    for sp in data:
+        prices[sp.symbol].append(sp)
 
-# Order the prices by date
-prices = {symbol: sorted(symbol_prices)
-          for symbol, symbol_prices in prices.items()}
+    # Order the prices by date
+    prices = {symbol: sorted(symbol_prices)
+            for symbol, symbol_prices in prices.items()}
 
 def pct_change(yesterday: StockPrice, today: StockPrice) -> float:
     return today.closing_price / yesterday.closing_price - 1
@@ -203,44 +207,45 @@ def day_over_day_changes(prices: List[StockPrice]) -> List[DailyChange]:
                         pct_change=pct_change(yesterday, today))
             for yesterday, today in zip(prices, prices[1:])]
 
-all_changes = [change
-               for symbol_prices in prices.values()
-               for change in day_over_day_changes(symbol_prices)]
+def test_day_over_day_changes():
+    all_changes = [change
+                for symbol_prices in prices.values()
+                for change in day_over_day_changes(symbol_prices)]
 
-max_change = max(all_changes, key=lambda change: change.pct_change)
-# see, e.g. http://news.cnet.com/2100-1001-202143.html
-assert max_change.symbol == 'AAPL'
-assert max_change.date == datetime.date(1997, 8, 6)
-assert 0.33 < max_change.pct_change < 0.34
+    max_change = max(all_changes, key=lambda change: change.pct_change)
+    # see, e.g. http://news.cnet.com/2100-1001-202143.html
+    assert max_change.symbol == 'AAPL'
+    assert max_change.date == datetime.date(1997, 8, 6)
+    assert 0.33 < max_change.pct_change < 0.34
 
-min_change = min(all_changes, key=lambda change: change.pct_change)
-# see, e.g. http://money.cnn.com/2000/09/29/markets/techwrap/
-assert min_change.symbol == 'AAPL'
-assert min_change.date == datetime.date(2000, 9, 29)
-assert -0.52 < min_change.pct_change < -0.51
+    min_change = min(all_changes, key=lambda change: change.pct_change)
+    # see, e.g. http://money.cnn.com/2000/09/29/markets/techwrap/
+    assert min_change.symbol == 'AAPL'
+    assert min_change.date == datetime.date(2000, 9, 29)
+    assert -0.52 < min_change.pct_change < -0.51
 
-changes_by_month: List[DailyChange] = {month: [] for month in range(1, 13)}
+    changes_by_month: List[DailyChange] = {month: [] for month in range(1, 13)}
 
-for change in all_changes:
-    changes_by_month[change.date.month].append(change)
+    for change in all_changes:
+        changes_by_month[change.date.month].append(change)
 
-avg_daily_change = {
-    month: sum(change.pct_change for change in changes) / len(changes)
-    for month, changes in changes_by_month.items()
-}
+    avg_daily_change = {
+        month: sum(change.pct_change for change in changes) / len(changes)
+        for month, changes in changes_by_month.items()
+    }
 
-# October is the best month
-assert avg_daily_change[10] == max(avg_daily_change.values())
+    # October is the best month
+    assert avg_daily_change[10] == max(avg_daily_change.values())
 
-from scratch.linear_algebra import distance
+    from scratch.linear_algebra import distance
 
-a_to_b = distance([63, 150], [67, 160])        # 10.77
-a_to_c = distance([63, 150], [70, 171])        # 22.14
-b_to_c = distance([67, 160], [70, 171])        # 11.40
+    a_to_b = distance([63, 150], [67, 160])        # 10.77
+    a_to_c = distance([63, 150], [70, 171])        # 22.14
+    b_to_c = distance([67, 160], [70, 171])        # 11.40
 
-a_to_b = distance([160, 150], [170.2, 160])    # 14.28
-a_to_c = distance([160, 150], [177.8, 171])    # 27.53
-b_to_c = distance([170.2, 160], [177.8, 171])  # 13.37
+    a_to_b = distance([160, 150], [170.2, 160])    # 14.28
+    a_to_c = distance([160, 150], [177.8, 171])    # 27.53
+    b_to_c = distance([170.2, 160], [177.8, 171])  # 13.37
 
 from typing import Tuple
 
@@ -257,10 +262,11 @@ def scale(data: List[Vector]) -> Tuple[Vector, Vector]:
 
     return means, stdevs
 
-vectors = [[-3, -1, 1], [-1, 0, 1], [1, 1, 1]]
-means, stdevs = scale(vectors)
-assert means == [-1, 0, 1]
-assert stdevs == [2, 1, 0]
+def test_scale():
+    vectors = [[-3, -1, 1], [-1, 0, 1], [1, 1, 1]]
+    means, stdevs = scale(vectors)
+    assert means == [-1, 0, 1]
+    assert stdevs == [2, 1, 0]
 
 def rescale(data: List[Vector]) -> List[Vector]:
     """
@@ -281,9 +287,10 @@ def rescale(data: List[Vector]) -> List[Vector]:
 
     return rescaled
 
-means, stdevs = scale(rescale(vectors))
-assert means == [0, 0, 1]
-assert stdevs == [1, 1, 0]
+def test_rescale():
+    means, stdevs = scale(rescale(vectors))
+    assert means == [0, 0, 1]
+    assert stdevs == [1, 1, 0]
 
 
 import tqdm
